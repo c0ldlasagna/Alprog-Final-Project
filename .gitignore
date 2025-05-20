@@ -39,3 +39,4 @@
 *.app
 
 data.json
+*.code-workspace
