@@ -7,15 +7,15 @@ CLIENT_INC = -I ./client/include -I ./shared/include
 SERVER_SRC = server/main.cpp $(wildcard server/src/*.cpp) $(wildcard shared/src/*.cpp)
 SERVER_INC = -I ./shared/include -I ./server/include
 
-all: client server
+all: build/client build/server
 
-client: $(CLIENT_SRC)
+build/client: $(CLIENT_SRC)
 	mkdir -p build
-	$(CXX) $(CXXFLAGS) $(CLIENT_INC) -o build/client $(CLIENT_SRC) -lws2_32
+	$(CXX) $(CXXFLAGS) $(CLIENT_INC) -o $@ $(CLIENT_SRC) -lws2_32
 
-server: $(SERVER_SRC)
+build/server: $(SERVER_SRC)
 	mkdir -p build
-	$(CXX) $(CXXFLAGS) $(SERVER_INC) -o build/server $(SERVER_SRC) -lws2_32
+	$(CXX) $(CXXFLAGS) $(SERVER_INC) -o $@ $(SERVER_SRC) -lws2_32
 
 clean:
 	rm -rf build
