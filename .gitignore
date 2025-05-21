@@ -40,3 +40,4 @@
 
 data.json
 *.code-workspace
+thirdparty/*
