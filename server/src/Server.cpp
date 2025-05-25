@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include "Endpoints.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
 
 using json = nlohmann::json;
 
@@ -68,30 +70,28 @@ void listenServer::handleClient(SOCKET client){
     int recvSize = recv(client, recvBuffer, sizeof(recvBuffer), 0);
     if (recvSize <= 0) return;
 
-    std::string recvStr(recvBuffer, recvSize);
-    log("Received: " + recvStr, 0);
+    std::string recv(recvBuffer, recvSize);
+    log("Received: " + recv, 0);
 
-    json recvjson;
-    json sendjson;
+    Request request;
+    Response response;
     try {
-        recvjson = json::parse(recvStr);
-        std::string method = recvjson.value("method", "");
-        if (method == "register") {
-            sendjson = registerUser(this->db, recvjson);
-        } else if (method == "login") {
-            sendjson = loginUser(this->db, recvjson);
-        } else if (method == "info") {
-            sendjson = getUserData(this->db, recvjson);
-        } else if (method == "ping") {
-            sendjson = {{"response", "pong"}};
-        } else {
-            sendjson = {{"status", "fail"}, {"error", "Unknown method"}};
+        request = json::parse(recv);
+        switch(request.method){
+            case LOGIN:
+                response = login(this->db,request);
+                break;
+            case SIGNUP:
+                response = signup(this->db,request);
+                break;
+            default:
+                response = Response{.success=false,.message="Unknown Method",.u=std::nullopt};
+                break;
         }
     } catch (const std::exception& e) {
-        sendjson = {{"status", "fail"}, {"error", e.what()}};
+        response = Response{.success=false,.message="Server Error",.u=std::nullopt};
     }
-
-    std::string sendBuffer = sendjson.dump();
+    std::string sendBuffer = json(response).dump();
     send(client, sendBuffer.c_str(), sendBuffer.length(), 0);
 }
 

@@ -18,6 +18,5 @@ class listenServer{
         void initialize();
         void acceptClient();
         void shutdown();
-
 };
 

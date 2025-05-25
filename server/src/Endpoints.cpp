@@ -2,51 +2,48 @@
 #include "json.hpp"
 #include "log.hpp"
 #include <fstream>
+#include "Response.hpp"
+#include "Request.hpp"
 
 using json = nlohmann::json;
 
-json registerUser(json& db, const json& data) {
-    std::string username = data.value("username", "");
-    std::string password = data.value("password", "");
-    if (username.empty() || password.empty()) {
-        return {{"status", "fail"}, {"error", "Missing username or password"}};
+Response login(json& db,const Request& request){
+    if(request.username.empty() || request.password.empty()){
+        return {false, "Missing username or password", std::nullopt};
     }
-    if (db.contains(username)) {
-        return {{"status", "fail"}, {"error", "User already exists"}};
+    if(!db.contains(request.username)){
+        return {false, "User not found", std::nullopt};
     }
-    db[username] = {{"password", password}, {"balance", 0.0}};
-    log("Registered user: " + username, 0);
-    // Write to file on change
-    std::ofstream dbFile("data.json");
-    if (dbFile.is_open()) {
-        dbFile << db.dump(4);
-        dbFile.close();
-        log("Database saved to data.json after registration", 0);
-    } else {
-        log("Failed to open data.json for writing after registration", 1);
+    if(db[request.username]["password"] != request.password){
+        return {false, "Incorrect password", std::nullopt};
     }
-    return {{"status", "success"}};
+    log("User logged in: " + request.username, 0);
+    User user;
+    user.username = request.username;
+    user.password = request.password;
+    user.balance = db[request.username].value("balance", 0.0);  
+    user.transactions = db[request.username].value("transactions", std::vector<Transaction>());
+    return {true, "Login successful", user};
 }
 
-json loginUser(json& db, const json& data) {
-    std::string username = data.value("username", "");
-    std::string password = data.value("password", "");
-    if (!db.contains(username)) {
-        return {{"status", "fail"}, {"error", "User not found"}};
+Response signup(json& db, const Request& request) {
+    if (request.username.empty() || request.password.empty()) {
+        return {false, "Missing username or password", std::nullopt};
     }
-    if (db[username]["password"] != password) {
-        return {{"status", "fail"}, {"error", "Incorrect password"}};
+    if (db.contains(request.username)) {
+        return {false, "Username already exists", std::nullopt};
     }
-    log("User logged in: " + username, 0);
-    return {{"status", "success"}};
-}
-
-json getUserData(json& db, const json& data) {
-    std::string username = data.value("username", "");
-    if (!db.contains(username)) {
-        return {{"status", "fail"}, {"error", "User not found"}};
-    }
-    double balance = db[username].value("balance", 0.0);
-    return {{"status", "success"}, {"username", username}, {"balance", balance}};
+    db[request.username] = {
+        {"password", request.password},
+        {"balance", 0.0},
+        {"transactions", json::array()}
+    };
+    log("User signed up: " + request.username, 0);
+    User user;
+    user.username = request.username;
+    user.password = request.password;
+    user.balance = 0.0;
+    user.transactions = {};
+    return {true, "Signup successful", user};
 }
 
