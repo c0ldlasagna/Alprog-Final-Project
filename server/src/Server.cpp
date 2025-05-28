@@ -93,6 +93,11 @@ void listenServer::handleClient(SOCKET client){
     }
     std::string sendBuffer = json(response).dump();
     send(client, sendBuffer.c_str(), sendBuffer.length(), 0);
+
+    // Write the current database to the file after every request
+    std::ofstream dbFile("data.json");
+    dbFile << this->db.dump(4);
+    log("Database saved to data.json after request", 0);
 }
 
 void listenServer::shutdown(){
