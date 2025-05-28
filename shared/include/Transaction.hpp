@@ -3,10 +3,11 @@
 #include "json.hpp"
 #include <vector>
 #include <optional>
+#include <chrono>
 
 enum TransactionType{
     TDEPOSIT,
-    TSEND,
+    TTRANSFER,
     TRECEIVE,
     TWITHDRAW
 };
@@ -15,7 +16,16 @@ struct Transaction{
     TransactionType type;
     double amount;
     std::string target;
-    std::string timestamp; 
+    long long timestamp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+};
+
+inline void to_json(nlohmann::json& j, const TransactionType& t) {
+    j = static_cast<int>(t);
+};
+
+inline void from_json(const nlohmann::json& j, TransactionType& t) {
+    int value = j.get<int>();
+    t = static_cast<TransactionType>(value);
 };
 
 inline void to_json(nlohmann::json& j, const Transaction& t) {
