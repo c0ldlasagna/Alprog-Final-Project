@@ -39,11 +39,15 @@ Component LoginForm(std::shared_ptr<Client> c) {
         } else {
             *loggedIn = false;
             *message = "Failed to log in";
+            username->clear();
+            password->clear();
         }
         }
         catch(const std::exception&){
             *loggedIn = 0;
             *message = "Failed to connect to server.";
+            username->clear();
+            password->clear();
         }
         
     },ButtonOption::Animated(Color::RGBA(0xff,0,0,0xFF)));
@@ -54,13 +58,19 @@ Component LoginForm(std::shared_ptr<Client> c) {
         if (resp.success) {
             *loggedIn = 0;
             *message = "Signed up successfully! You can login now.";
+            username->clear();
+            password->clear();
         } else {
             *loggedIn = 0;
             *message = "Failed to sign up";
+            username->clear();
+            password->clear();
         }}
         catch(std::exception&){
             *loggedIn = 0;
             *message = "Failed to connect to server";
+            username->clear();
+            password->clear();
         }
     },ButtonOption::Animated(Color::RGBA(0,0xff,0,0xFF)));
 

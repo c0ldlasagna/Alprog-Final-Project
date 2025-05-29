@@ -10,8 +10,20 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
+#include <ftxui/component/component_options.hpp>
 
 using namespace ftxui;
+
+MenuEntryOption Colored(ftxui::Color c){
+    MenuEntryOption option;
+    option.animated_colors.foreground.enabled = true;
+    option.animated_colors.background.enabled = true;
+    option.animated_colors.background.active = c;
+    option.animated_colors.background.inactive = Color::Black;
+    option.animated_colors.foreground.active = Color::White;
+    option.animated_colors.foreground.inactive = c;
+    return option;
+};
 
 Component Dashboard(std::shared_ptr<Client> c){
     std::shared_ptr<std::string> message = std::make_shared<std::string>("");  
@@ -24,11 +36,17 @@ Component Dashboard(std::shared_ptr<Client> c){
         .multiline = false
     };
 
+    auto logoutButton = Button("Logout",[=]{
+        c->session.loggedIn = 0;
+        c->session.user = User();
+        *message = "Logged out successfully.";
+    }, ButtonOption::Animated(Color::RGBA(0xff,0,0,0xff)));
+
 
     auto menu = Container::Vertical({
-        MenuEntry(MenuEntryOption{.label="Deposit"}),
-        MenuEntry(MenuEntryOption{.label="Withdraw"}),
-        MenuEntry(MenuEntryOption{.label="Transfer"}),
+        MenuEntry("Deposit",Colored(Color::RGBA(0xff,0x80,0x00,0xff))),
+        MenuEntry("Withdraw",Colored(Color::RGBA(0xc4,0x5e,0xa7,0xff))),
+        MenuEntry("Transfer",Colored(Color::RGBA(0x97,0xcd,0xbe,0xff))),
         //MenuEntry(MenuEntryOption{.label ="History"})
     },page.get());
 
@@ -168,6 +186,7 @@ Component Dashboard(std::shared_ptr<Client> c){
 
     auto mainContainer = Container::Horizontal({
         menu,
+        logoutButton,
         actionsTab
     });
 
@@ -177,23 +196,28 @@ Component Dashboard(std::shared_ptr<Client> c){
         return hbox(
             separatorEmpty(),
             vbox(
-            hcenter((Skull()) | color(Color::Color::RGBA(0xFF,0,0,0xFF))),
-            //vcenter(text("Hello, " + c->session.user.username))|flex_grow,
+            hcenter((Logo()) | color(Color::Color::RGBA(0xFF,0,0,0xFF))),
+            vcenter(text("Hello, " + c->session.user.username))|flex_grow,
             menu->Render(),
-            text("Log Out")
+            filler(),
+            logoutButton->Render()
             ),
             separatorEmpty(),   
             separator(),
             separatorEmpty(),
             window(
-                text("Your balance is "+ ss.str()) |color(Color::RGBA(0x33,0xFF,0x12,0xFF)),
+                text("   Your balance is "+ ss.str()+"   ") |color(Color::RGBA(0x00,0xff,0xaa,0xFF))| bold,
                 vbox({
-                    *page == 0 ? depositLogo() :
-                    *page == 1 ? withdrawLogo() :       
-                    *page == 2 ? transferLogo() :
-                    *page == 3 ? historyLogo() :
-                    text(""),
-                    actionsTab->Render()
+                    separatorEmpty(),
+                    hcenter(
+                    *page == 0 ? depositLogo()  | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xff,0x80,0x00,0xff)).Stop(Color::RGBA(0xff,0x00,0,0xff))) :
+                    *page == 1 ? withdrawLogo() | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xc4,0x5e,0xa7,0xff)).Stop(Color::RGBA(0xa1,0xdf,0xff,0xff))) :      
+                    *page == 2 ? transferLogo() | color(LinearGradient().Angle(0).Stop(Color::RGBA(0x97,0xcd,0xbe,0xff)).Stop(Color::RGBA(0x6f,0xc0,0xfa,0xff))) :
+                    *page == 3 ? historyLogo()  | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xff,0x80,0x00,0xff)).Stop(Color::RGBA(0xff,0x00,0,0xff))) :
+                    text("")
+                    ),
+                    actionsTab->Render(),
+                    filler()
                 })
             )|flex_grow
         );}
