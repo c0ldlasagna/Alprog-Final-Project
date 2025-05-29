@@ -8,6 +8,7 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
 #include "Response.hpp"
+#include <ftxui/component/component_options.hpp>
 
 using namespace ftxui;
 using json = nlohmann::json;
@@ -16,7 +17,7 @@ Component LoginForm(std::shared_ptr<Client> c) {
     auto message = std::make_shared<std::string>("");
     std::string* username = &c->session.user.username;
     std::string* password = &c->session.user.password;
-    bool* loggedIn = &c->session.loggedIn;
+    int* loggedIn = &c->session.loggedIn;
 
     InputOption usernameOpt;
     usernameOpt.password = false;
@@ -30,25 +31,36 @@ Component LoginForm(std::shared_ptr<Client> c) {
     auto passwordInput = Input(password, "Password", passwordOpt);
 
     auto loginButton = Button("Login", [=] {
-        Response resp = c->request(Request{.method = LOGIN, .username=*username, .password =*password});
+        try{
+            Response resp = c->request(Request{.method = LOGIN, .username=*username, .password =*password});
         if (resp.success) {
-            *loggedIn = true;
-
+            *loggedIn = 1;
             *message = "Logged in as"+resp.u.value().username;
         } else {
             *loggedIn = false;
             *message = "Failed to log in";
         }
-    });
+        }
+        catch(const std::exception&){
+            *loggedIn = 0;
+            *message = "Failed to connect to server.";
+        }
+        
+    },ButtonOption::Animated());
 
     auto signupButton = Button("Sign Up", [=] {
-        Response resp = c->request(Request{.method=SIGNUP,.username=*username,.password=*password});
+        try{
+            Response resp = c->request(Request{.method=SIGNUP,.username=*username,.password=*password});
         if (resp.success) {
-            *loggedIn = true;
-            *message = "Signed up successfully";
+            *loggedIn = 1;
+            *message = "Signed up successfully! You can login now.";
         } else {
-            *loggedIn = false;
+            *loggedIn = 0;
             *message = "Failed to sign up";
+        }}
+        catch(std::exception&){
+            *loggedIn = 0;
+            *message = "Failed to connect to server";
         }
     });
 
@@ -76,12 +88,12 @@ Component LoginForm(std::shared_ptr<Client> c) {
                 separatorEmpty(),
                 hbox(text(" Password:"), separatorEmpty(), passwordInput->Render()),
                 separatorEmpty(),
-                hbox(loginButton->Render() | flex, signupButton->Render() | flex),
+                hbox(filler(),loginButton->Render(),filler(), signupButton->Render(),filler()),
                 separatorEmpty(),
                 text(*message) | color(Color::RedLight)
             }), BorderStyle::ROUNDED) | size(WIDTH, EQUAL, 75)) | size(HEIGHT, EQUAL, 15),
             filler()
-        )|borderRounded|bgcolor(Color::RGBA(0,0,0,0xFF));
+        );
     });
 
     return renderer;

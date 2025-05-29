@@ -4,7 +4,7 @@
 #include "User.hpp"
 
 struct SessionState{
-    bool loggedIn;
+    int loggedIn;
     User user;
 };
 

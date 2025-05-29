@@ -8,12 +8,12 @@ using json = nlohmann::json;
 
 
 Client::Client(
-                const std::string serverAddr,
-                const int serverPort
-                ){
-                  this->serverAddr.sin_family = AF_INET;
-                  this->serverAddr.sin_addr.s_addr = inet_addr(serverAddr.c_str());
-                  this->serverAddr.sin_port = htons(serverPort);
+            const std::string serverAddr,
+            const int serverPort
+            ){
+                this->serverAddr.sin_family = AF_INET;
+                this->serverAddr.sin_addr.s_addr = inet_addr(serverAddr.c_str());
+                this->serverAddr.sin_port = htons(serverPort);
 };
 
 void Client::initialize(){
@@ -24,7 +24,7 @@ void Client::initialize(){
 }
 
 json Client::request(const json request){
-    char recvBuffer[1024];
+    char recvBuffer[10000];
     int recvSize;
 
     this->clientSocket = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);

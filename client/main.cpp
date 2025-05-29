@@ -7,17 +7,21 @@
 #include <memory>
 #include <string>
 #include "ui/Login.hpp"
+#include "ui/mainRenderer.hpp"
+#include "ui/Dashboard.hpp"
 
 using namespace ftxui;
-using json = nlohmann::json;
 
 int main() {
     // Setup client connection
     auto client = std::make_shared<Client>("127.0.0.1", 6969);
     client->initialize();
 
+    client->session.loggedIn = 0;
+
     auto screen = ScreenInteractive::Fullscreen();
-    screen.Loop(LoginForm(client));
+
+    screen.Loop(mainRenderer(client));
 
     client->shutdown();
     
