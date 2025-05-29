@@ -59,11 +59,13 @@ Response deposit(json& db, const Request& request) {
     
     //Check if request is valid
     if (request.username.empty() || request.amount <= 0) {
+        log("bad request",1);
         return {false, "Invalid username or amount", std::nullopt};
     }
     
     //Check if User exists
     if (!db.contains(request.username)) {
+        log("bad user",1);
         return {false, "User not found", std::nullopt};
     }
 
@@ -75,7 +77,7 @@ Response deposit(json& db, const Request& request) {
 
     log("Deposit made by user: " + request.username + ", Amount: " + std::to_string(request.amount), 0);
 
-    db[request.username] = {user};
+    db[request.username] = user;
 
     return {true, "Deposit successful", user};
 }
@@ -100,6 +102,9 @@ Response withdraw(json& db, const Request& request) {
     }
 
     log("Withdrawal made by user: " + request.username + ", Amount: " + std::to_string(request.amount), 0);
+
+    db[request.username] = user;
+
     return {true, "Withdrawal successful", user};
 }
 
@@ -131,6 +136,9 @@ Response transfer(json& db, const Request& request) {
 
     //Send money to recipient
     recipient.receive(request.amount,request.username);
+
+    db[request.username] = sender;
+    db[request.target] = recipient;
 
     log("Transfer made by user: " + request.username + ", Amount: " + std::to_string(request.amount) + ", Target: " + request.target, 0);
 
