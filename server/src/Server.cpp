@@ -66,7 +66,7 @@ void listenServer::acceptClient(){
 };
 
 void listenServer::handleClient(SOCKET client){
-    char recvBuffer[1024];
+    char recvBuffer[10000];
     int recvSize = recv(client, recvBuffer, sizeof(recvBuffer), 0);
     if (recvSize <= 0) return;
 
@@ -79,19 +79,36 @@ void listenServer::handleClient(SOCKET client){
         request = json::parse(recv);
         switch(request.method){
             case LOGIN:
+                log("Handling login request",0);
                 response = login(this->db,request);
                 break;
             case SIGNUP:
+                log("Handling signup request",0);
                 response = signup(this->db,request);
                 break;
+            case DEPOSIT:
+                log("Handling deposit request",0);
+                response = deposit(this->db,request);
+                break;
+            case WITHDRAW:
+                log("Handling withdraw request",0);
+                response = withdraw(this->db,request);
+                break;
+            case TRANSFER:
+                log("Handling transfer request",0);
+                response = transfer(this->db,request);
+                break;
             default:
+                log("Unknown method received",1);
                 response = Response{.success=false,.message="Unknown Method",.u=std::nullopt};
                 break;
         }
     } catch (const std::exception& e) {
+        log(e.what(),1);
         response = Response{.success=false,.message="Server Error",.u=std::nullopt};
     }
     std::string sendBuffer = json(response).dump();
+    log(sendBuffer,0);
     send(client, sendBuffer.c_str(), sendBuffer.length(), 0);
 
     // Write the current database to the file after every request
