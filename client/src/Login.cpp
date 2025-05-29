@@ -32,10 +32,10 @@ Component LoginForm(std::shared_ptr<Client> c) {
 
     auto loginButton = Button("Login", [=] {
         try{
-            Response resp = c->request(Request{.method = LOGIN, .username=*username, .password =*password});
+        Response resp = c->request(Request{.method = LOGIN, .username=*username, .password =*password});
         if (resp.success) {
             *loggedIn = 1;
-            *message = "Logged in as"+resp.u.value().username;
+            c->session.user = resp.u.value();
         } else {
             *loggedIn = false;
             *message = "Failed to log in";
@@ -46,13 +46,13 @@ Component LoginForm(std::shared_ptr<Client> c) {
             *message = "Failed to connect to server.";
         }
         
-    },ButtonOption::Animated());
+    },ButtonOption::Animated(Color::RGBA(0xff,0,0,0xFF)));
 
     auto signupButton = Button("Sign Up", [=] {
         try{
             Response resp = c->request(Request{.method=SIGNUP,.username=*username,.password=*password});
         if (resp.success) {
-            *loggedIn = 1;
+            *loggedIn = 0;
             *message = "Signed up successfully! You can login now.";
         } else {
             *loggedIn = 0;
@@ -62,7 +62,7 @@ Component LoginForm(std::shared_ptr<Client> c) {
             *loggedIn = 0;
             *message = "Failed to connect to server";
         }
-    });
+    },ButtonOption::Animated(Color::RGBA(0,0xff,0,0xFF)));
 
     auto inputs = Container::Vertical({
         usernameInput,
@@ -90,10 +90,13 @@ Component LoginForm(std::shared_ptr<Client> c) {
                 separatorEmpty(),
                 hbox(filler(),loginButton->Render(),filler(), signupButton->Render(),filler()),
                 separatorEmpty(),
-                text(*message) | color(Color::RedLight)
-            }), BorderStyle::ROUNDED) | size(WIDTH, EQUAL, 75)) | size(HEIGHT, EQUAL, 15),
+                hcenter(text(*message))
+            }), BorderStyle::ROUNDED) | size(WIDTH, EQUAL, 75)) | size(HEIGHT, EQUAL, 15)| color(Color::RGBA(0xff,0xff,0xff,0xff)),
             filler()
-        );
+        )| bgcolor(LinearGradient()
+                    .Angle(90)
+                    .Stop(Color::Black)
+                    .Stop(Color::RGBA(25,0,0,127)));
     });
 
     return renderer;
