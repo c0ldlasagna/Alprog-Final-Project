@@ -11,6 +11,9 @@
 #include <iomanip>
 #include <sstream>
 #include <ftxui/component/component_options.hpp>
+#include <ftxui/dom/table.hpp>
+#include <vector>
+#include "sort.hpp"
 
 using namespace ftxui;
 
@@ -26,11 +29,12 @@ MenuEntryOption Colored(ftxui::Color c){
 };
 
 Component Dashboard(std::shared_ptr<Client> c){
-    std::shared_ptr<std::string> message = std::make_shared<std::string>("");  
-    std::shared_ptr<std::string> amount = std::make_shared<std::string>("");
-    std::shared_ptr<std::string> target = std::make_shared<std::string>("");
-    std::shared_ptr<int> page = std::make_shared<int>(0);
+    auto message = std::make_shared<std::string>("");  
+    auto amount = std::make_shared<std::string>("");
+    auto target = std::make_shared<std::string>("");
+    auto page = std::make_shared<int>(0);
     std::ostringstream ss;
+    auto transactions = std::make_shared<std::vector<std::string>>();
 
     InputOption amountOpts = InputOption{
         .multiline = false
@@ -47,7 +51,8 @@ Component Dashboard(std::shared_ptr<Client> c){
         MenuEntry("Deposit",Colored(Color::RGBA(0xff,0x80,0x00,0xff))),
         MenuEntry("Withdraw",Colored(Color::RGBA(0xc4,0x5e,0xa7,0xff))),
         MenuEntry("Transfer",Colored(Color::RGBA(0x97,0xcd,0xbe,0xff))),
-        //MenuEntry(MenuEntryOption{.label ="History"})
+        MenuEntry(MenuEntryOption{.label ="History"})
+        
     },page.get());
 
     auto amountInputDeposit = Input(amount.get(),"Amount",amountOpts) | CatchEvent([=](Event event){
@@ -114,8 +119,9 @@ Component Dashboard(std::shared_ptr<Client> c){
             }
         }
         catch(std::exception &e){
-            *message = "Failed to connect to server.";
+            *message = "Something went wrong.";
         }
+        amount->clear();
     });
 
     auto withdrawButton = Button("Withdraw",[=]{
@@ -127,16 +133,17 @@ Component Dashboard(std::shared_ptr<Client> c){
                 .amount=std::stod(*amount)});
             if(resp.success){
                 c->session.user = resp.u.value();
-                *message = "Withdraw Successful!";
+                *message = resp.message;
             }
             else{
                 c->session.user = resp.u.value();
-                *message = "Something went wrong.";
+                *message = resp.message;
             }
         }
         catch(std::exception &e){
-            *message = "Failed to connect to server.";
+            *message = "Something went wrong.";
         }
+        amount->clear();
     });
 
     auto transferButton = Button("Transfer",[=]{
@@ -150,16 +157,17 @@ Component Dashboard(std::shared_ptr<Client> c){
             });
             if(resp.success){
                 c->session.user = resp.u.value();
-                *message = "Transfer Successful!";
+                *message = resp.message;
             }
             else{
                 c->session.user = resp.u.value();
-                *message = "Something went wrong.";
+                *message = resp.message;
             }
         }
         catch(std::exception &e){
-            *message = "Failed to connect to server.";
+            *message = "Something went wrong.";
         }
+        amount->clear();
     });
 
    auto depositTab = Container::Vertical({
@@ -184,15 +192,68 @@ Component Dashboard(std::shared_ptr<Client> c){
         transferTab
     }, &*page);
 
-    auto mainContainer = Container::Horizontal({
+    auto sidebar = Container::Vertical({
         menu,
-        logoutButton,
+        logoutButton
+    });
+
+    auto mainContainer = Container::Horizontal({
+        sidebar,
         actionsTab
     });
 
     auto renderer = Renderer(mainContainer, [=] {
+        std::vector<Element> table_rows;
+
+        // Header row
+        table_rows.push_back(
+            hbox({
+                text("Date") | bold | size(WIDTH,EQUAL,20),
+                text("Type") | bold | flex,
+                text("Amount") | bold | flex,
+                text("Description") | bold | flex | align_right
+            })
+        );
+
+        // Sort transactions
+        quickSortTransactions(c->session.user.transactions, 0, c->session.user.transactions.size() - 1, SortMode::DATE, true);
+
+        // Add each transaction as an hbox row
+        for (const Transaction& t : c->session.user.transactions) {
+            std::vector<std::string> row;
+            to_string(t, row); // assuming this fills `row` with 4 strings
+
+            table_rows.push_back(
+                hbox({
+                    text(row[0]) | size(WIDTH,EQUAL,20),
+                    text(row[1]) | flex | color(row[1] == "Deposit"? Color::RGBA(0xff,0x80,0x00,0xff) :
+                        row[1] == "Withdraw" ? Color::RGBA(0xc4,0x5e,0xa7,0xff) :
+                        row[1] == "Transfer" ? Color::RGBA(0x97,0xcd,0xbe,0xff) :
+                        row[1] == "Receive" ? Color::RGBA(0x6f,0xc0,0xfa,0xff) : Color::White),
+                    text(row[2]) | flex| color(row[1] == "Deposit"? Color::RGBA(0xff,0x80,0x00,0xff) :
+                        row[1] == "Withdraw" ? Color::RGBA(0xc4,0x5e,0xa7,0xff) :
+                        row[1] == "Transfer" ? Color::RGBA(0x97,0xcd,0xbe,0xff) :
+                        row[1] == "Receive" ? Color::RGBA(0x6f,0xc0,0xfa,0xff) : Color::White) ,
+                    text(row[3]) | flex | align_right
+                })
+            );
+        }
+
+        // Final table as a vbox
+        Element table = vbox(table_rows);
+
+        auto scrollable = Container::Vertical({});
+        
+        auto table_renderer = Renderer(scrollable, [=] {
+            return vbox({
+                table
+            }) | vscroll_indicator | frame;
+        });
+        
         std::ostringstream ss;
+        
         ss << std::fixed << std::setprecision(2) << c->session.user.balance;
+
         return hbox(
             separatorEmpty(),
             vbox(
@@ -206,19 +267,22 @@ Component Dashboard(std::shared_ptr<Client> c){
             separator(),
             separatorEmpty(),
             window(
-                text("   Your balance is "+ ss.str()+"   ") |color(Color::RGBA(0x00,0xff,0xaa,0xFF))| bold,
+            text("   Your balance is "+ ss.str()+"   ") |color(Color::RGBA(0x00,0xff,0xaa,0xFF))| bold,
+            vbox({
+                separatorEmpty(),
+                hcenter(
+                *page == 0 ? depositLogo()  | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xff,0x80,0x00,0xff)).Stop(Color::RGBA(0xff,0x00,0,0xff))) :
+                *page == 1 ? withdrawLogo() | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xc4,0x5e,0xa7,0xff)).Stop(Color::RGBA(0xa1,0xdf,0xff,0xff))) :      
+                *page == 2 ? transferLogo() | color(LinearGradient().Angle(0).Stop(Color::RGBA(0x97,0xcd,0xbe,0xff)).Stop(Color::RGBA(0x6f,0xc0,0xfa,0xff))) :
+                *page == 3 ? historyLogo()  | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xff,0x80,0x00,0xff)).Stop(Color::RGBA(0xff,0x00,0,0xff))) :
+                text("")
+                )|size(HEIGHT,EQUAL,9),
+                separatorEmpty(),
                 vbox({
-                    separatorEmpty(),
-                    hcenter(
-                    *page == 0 ? depositLogo()  | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xff,0x80,0x00,0xff)).Stop(Color::RGBA(0xff,0x00,0,0xff))) :
-                    *page == 1 ? withdrawLogo() | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xc4,0x5e,0xa7,0xff)).Stop(Color::RGBA(0xa1,0xdf,0xff,0xff))) :      
-                    *page == 2 ? transferLogo() | color(LinearGradient().Angle(0).Stop(Color::RGBA(0x97,0xcd,0xbe,0xff)).Stop(Color::RGBA(0x6f,0xc0,0xfa,0xff))) :
-                    *page == 3 ? historyLogo()  | color(LinearGradient().Angle(0).Stop(Color::RGBA(0xff,0x80,0x00,0xff)).Stop(Color::RGBA(0xff,0x00,0,0xff))) :
-                    text("")
-                    ),
-                    actionsTab->Render(),
-                    filler()
-                })
+                    (*page == 3 ? table : actionsTab->Render()),
+                    text(*message)
+                })|vscroll_indicator|frame,
+            })
             )|flex_grow
         );}
     );

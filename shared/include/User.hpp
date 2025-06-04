@@ -34,7 +34,6 @@ inline void from_json(const nlohmann::json& j, User& u) {
     j.at("transactions").get_to(u.transactions);    
 }
 
-
 inline void to_json(nlohmann::json& j, const User& u) {
     j = nlohmann::json{
         {"username", u.username},

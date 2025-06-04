@@ -98,7 +98,7 @@ Response withdraw(json& db, const Request& request) {
         user.withdraw(request.amount);
     }
     catch(std::exception &e){
-        return {false,e.what()};
+        return {false,e.what(),user};
     }
 
     log("Withdrawal made by user: " + request.username + ", Amount: " + std::to_string(request.amount), 0);
@@ -116,13 +116,15 @@ Response transfer(json& db, const Request& request) {
     }
     //Check if sender exists
     if (!db.contains(request.username)) {
-        return {false, "Sender not found", std::nullopt};
-    }
-    //Check if recipient exists
-    if (!db.contains(request.target)) {
-        return {false, "Recipient not found", std::nullopt};
+        return {false, "Sender not found",std::nullopt};
     }
     User sender = db[request.username];
+
+    //Check if recipient exists
+    if (!db.contains(request.target)) {
+        return {false, "Recipient not found", sender};
+    }
+
     User recipient = db[request.target];
 
     //Take money from sender
@@ -131,7 +133,7 @@ Response transfer(json& db, const Request& request) {
     }
     catch(std::exception &e){
         log(e.what(),1);
-        return {false,e.what()};
+        return {false,e.what(),sender};
     }
 
     //Send money to recipient
