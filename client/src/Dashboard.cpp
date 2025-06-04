@@ -58,7 +58,7 @@ Component Dashboard(std::shared_ptr<Client> c){
 
     auto amountInputDeposit = Input(amount.get(),"Amount",amountOpts) | CatchEvent([=](Event event){
         if (!event.is_character())
-        return false; // Let non-character events (like Enter, arrows) pass
+        return false;
 
         char c = event.character()[0];
 
@@ -66,39 +66,39 @@ Component Dashboard(std::shared_ptr<Client> c){
             return false; // Allow digits
 
         if (c == '.' && amount->find('.') == std::string::npos)
-            return false; // Allow only one decimal point
+            return false; 
 
-        return true; // Block everything else
+        return true; 
     });
 
     auto amountInputWithdraw = Input(amount.get(),"Amount",amountOpts) | CatchEvent([=](Event event){
         if (!event.is_character())
-        return false; // Let non-character events (like Enter, arrows) pass
+        return false;
 
         char c = event.character()[0];
 
         if (std::isdigit(c))
-            return false; // Allow digits
+            return false; 
 
         if (c == '.' && amount->find('.') == std::string::npos)
-            return false; // Allow only one decimal point
+            return false; 
 
-        return true; // Block everything else
+        return true; 
     });
 
     auto amountInputTransfer = Input(amount.get(),"Amount",amountOpts) | CatchEvent([=](Event event){
         if (!event.is_character())
-        return false; // Let non-character events (like Enter, arrows) pass
+        return false; 
 
         char c = event.character()[0];
 
         if (std::isdigit(c))
-            return false; // Allow digits
+            return false; 
 
         if (c == '.' && amount->find('.') == std::string::npos)
-            return false; // Allow only one decimal point
+            return false; 
 
-        return true; // Block everything else
+        return true; 
     });
 
     auto targetInput = Input(target.get(),"Recipient",amountOpts);
@@ -221,7 +221,6 @@ Component Dashboard(std::shared_ptr<Client> c){
     auto renderer = Renderer(mainContainer, [=] {
         std::vector<Element> table_rows;
 
-        // Header row
         table_rows.push_back(
             hbox({
                 text("Date") | bold | size(WIDTH,EQUAL,20),
@@ -231,16 +230,14 @@ Component Dashboard(std::shared_ptr<Client> c){
             })
         );
 
-        // Sort transactions
         quickSortTransactions(c->session.user.transactions, 0, c->session.user.transactions.size() - 1, SortMode::DATE, true);
 
-        // Add each transaction as an hbox row
         int start = (*historyPage) * 7;
         int end = std::min(start + 7, static_cast<int>(c->session.user.transactions.size()));
         for (int i = start; i < end; ++i) {
             const Transaction& t = c->session.user.transactions[i];
             std::vector<std::string> row;
-            to_string(t, row); // assuming this fills `row` with 4 strings
+            to_string(t, row);
 
             table_rows.push_back(
             hbox({
@@ -256,7 +253,6 @@ Component Dashboard(std::shared_ptr<Client> c){
             );
         }
 
-        // Final table as a vbox
         Element table = vbox(table_rows);
 
         std::ostringstream ss;
