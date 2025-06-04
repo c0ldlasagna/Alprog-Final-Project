@@ -34,6 +34,8 @@ Dyin' uses winsock2 to send json over tcp to the server to handle requests. All 
 - Network send/receive buffer size is static, therefore causing errors when message is too large.
 - Passwords are stored in plaintext.
 - UI could look and function a little better.
+- No multithreading
+- Uses winsock, so only works on windows.
 
 
 ## Libraries used:
