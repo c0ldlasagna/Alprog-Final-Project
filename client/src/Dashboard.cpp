@@ -43,7 +43,7 @@ Component Dashboard(std::shared_ptr<Client> c){
     auto logoutButton = Button("Logout",[=]{
         c->session.loggedIn = 0;
         c->session.user = User();
-        *message = "Logged out successfully.";
+        message->clear();
     }, ButtonOption::Animated(Color::RGBA(0xff,0,0,0xff)));
 
 

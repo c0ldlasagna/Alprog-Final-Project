@@ -36,6 +36,7 @@ Component LoginForm(std::shared_ptr<Client> c) {
         if (resp.success) {
             *loggedIn = 1;
             c->session.user = resp.u.value();
+            message->clear();
         } else {
             *loggedIn = false;
             *message = "Failed to log in";
